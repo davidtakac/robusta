@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Caffeine</string>
+    <string name="tile_name">Keep awake</string>
+    <string name="channel_name">Caffeine control</string>
+    <string name="channel_description">Status notification with a stop action.</string>
+    <string name="notification_title">Keep awake</string>
+    <string name="notification_text">Keeping your screen awake.</string>
+    <string name="notification_big_text">Keeping your screen awake. Tap \'stop\' or lock your screen to stop.</string>
+    <string name="stop_action">Stop</string>
+</resources>
