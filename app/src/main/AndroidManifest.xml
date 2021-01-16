@@ -8,9 +8,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true">
         <service
-            android:name=".CaffeineTileService"
+            android:name=".tiles.DimAwakeTileService"
             android:icon="@drawable/ic_coffee"
-            android:label="@string/tile_name"
+            android:label="@string/dim_tile_name"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action
@@ -18,7 +18,17 @@
             </intent-filter>
         </service>
         <service
-            android:name=".CaffeineKeepAwakeService"
+            android:name=".tiles.BrightAwakeTileService"
+            android:icon="@drawable/ic_coffee_plus"
+            android:label="@string/bright_tile_name"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action
+                    android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name=".KeepAwakeService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false"/>
         <receiver

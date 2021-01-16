@@ -1,22 +1,26 @@
-package os.dtakac.caffeine
+package os.dtakac.caffeine.tiles
 
 import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import os.dtakac.caffeine.KeepAwakeService
 
-class CaffeineTileService : TileService() {
+open class KeepAwakeTileService(
+        private val intentKey: String
+) : TileService() {
     override fun onTileAdded() {
         qsTile.state = Tile.STATE_INACTIVE
         qsTile.updateTile()
     }
 
     override fun onClick() {
-        val caffeineKeepAwakeIntent = Intent(this, CaffeineKeepAwakeService::class.java)
+        val intent = Intent(this, KeepAwakeService::class.java)
+        intent.putExtra(intentKey, true)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(caffeineKeepAwakeIntent)
+            startForegroundService(intent)
         } else {
-            startService(caffeineKeepAwakeIntent)
+            startService(intent)
         }
     }
 }

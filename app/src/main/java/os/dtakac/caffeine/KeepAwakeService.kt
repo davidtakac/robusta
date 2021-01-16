@@ -3,13 +3,18 @@ package os.dtakac.caffeine
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import java.lang.IllegalStateException
 
-class CaffeineKeepAwakeService : Service() {
+class KeepAwakeService : Service() {
     companion object {
+        const val START_DIM = "Caffeine::StartDim"
+        const val START_BRIGHT = "Caffeine::StartBright"
+
         private const val NOTIFICATION_CHANNEL_ID = "Caffeine::NotificationChannel"
         private const val NOTIFICATION_ID = 1
         private const val STOP_ACTION = "Caffeine::StopAction"
@@ -27,14 +32,18 @@ class CaffeineKeepAwakeService : Service() {
         return null
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        start()
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.getBooleanExtra(STOP_ACTION, false) == true) {
-            stop()
+        when {
+            intent?.getBooleanExtra(START_BRIGHT, false) == true -> {
+                start(allowDim = false)
+            }
+            intent?.getBooleanExtra(START_DIM, false) == true -> {
+                start(allowDim = true)
+            }
+            intent?.getBooleanExtra(STOP_ACTION, false) == true -> {
+                stop()
+            }
+            else -> throw IllegalStateException("Intent action unknown.")
         }
         return START_NOT_STICKY
     }
@@ -44,18 +53,11 @@ class CaffeineKeepAwakeService : Service() {
         super.onDestroy()
     }
 
-    private fun start() {
-        // keep screen on
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+    private fun start(allowDim: Boolean) {
         releaseWakelock()
-        @Suppress("DEPRECATION")
-        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, WAKE_LOCK_TAG)
-        @Suppress("WakelockTimeout")
-        wakeLock?.acquire()
-        // listen for screen off
-        registerReceiver(screenOffReceiver)
-        // promote to foreground
-        startForeground(NOTIFICATION_ID, getNotification())
+        acquireWakeLock(allowDim)
+        registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
+        startForeground(NOTIFICATION_ID, getNotification(allowDim))
     }
 
     private fun stop() {
@@ -64,15 +66,28 @@ class CaffeineKeepAwakeService : Service() {
         stopSelf()
     }
 
+    private fun acquireWakeLock(allowDim: Boolean) {
+        @Suppress("DEPRECATION")
+        val wakeLockType = if (allowDim) {
+            PowerManager.SCREEN_DIM_WAKE_LOCK
+        } else {
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+        }
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(wakeLockType, WAKE_LOCK_TAG)
+        @Suppress("WakelockTimeout")
+        wakeLock?.acquire()
+    }
+
     private fun releaseWakelock() {
         if (wakeLock?.isHeld == true) {
             wakeLock?.release()
         }
     }
 
-    private fun getNotification(): Notification {
+    private fun getNotification(allowDim: Boolean): Notification {
         createNotificationChannel()
-        val stopIntent = Intent(this, CaffeineKeepAwakeService::class.java)
+        val stopIntent = Intent(this, KeepAwakeService::class.java)
         stopIntent.putExtra(STOP_ACTION, true)
         val stopAction = PendingIntent.getService(
                 this,
@@ -80,11 +95,16 @@ class CaffeineKeepAwakeService : Service() {
                 stopIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT
         )
+
+        val icon = if (allowDim) R.drawable.ic_coffee else R.drawable.ic_coffee_plus
+        val title = if (allowDim) R.string.notification_title_dim else R.string.notification_title_bright
+        val text = if (allowDim) R.string.notification_big_text_dim else R.string.notification_big_text_bright
+
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_coffee)
-                .setContentTitle(getString(R.string.notification_title))
+                .setSmallIcon(icon)
+                .setContentTitle(getString(title))
                 .setContentText(getString(R.string.notification_text))
-                .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.notification_big_text)))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(getString(text)))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .addAction(R.drawable.ic_stop, getString(R.string.stop_action), stopAction)
                 .build()
