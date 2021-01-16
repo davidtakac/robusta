@@ -10,8 +10,11 @@ open class KeepAwakeTileService(
         private val intentKey: String
 ) : TileService() {
     override fun onTileAdded() {
-        qsTile.state = Tile.STATE_INACTIVE
-        qsTile.updateTile()
+        setInactive()
+    }
+
+    override fun onStartListening() {
+        setInactive()
     }
 
     override fun onClick() {
@@ -22,5 +25,10 @@ open class KeepAwakeTileService(
         } else {
             startService(intent)
         }
+    }
+
+    private fun setInactive() {
+        qsTile.state = Tile.STATE_INACTIVE
+        qsTile.updateTile()
     }
 }
