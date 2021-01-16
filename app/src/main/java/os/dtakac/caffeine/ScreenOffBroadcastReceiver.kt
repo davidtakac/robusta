@@ -4,9 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 
-class ScreenOffBroadcastReceiver : BroadcastReceiver() {
-    var onScreenOff: (() -> Unit)? = null
-
+class ScreenOffBroadcastReceiver(
+        private val onScreenOff: (() -> Unit)? = null
+) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.action == Intent.ACTION_SCREEN_OFF) {
             onScreenOff?.invoke()

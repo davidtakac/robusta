@@ -23,9 +23,7 @@ class KeepAwakeService : Service() {
 
     private var wakeLock: PowerManager.WakeLock? = null
     private val screenOffReceiver: ScreenOffBroadcastReceiver by lazy {
-        ScreenOffBroadcastReceiver().apply {
-            onScreenOff = { stop() }
-        }
+        ScreenOffBroadcastReceiver { stop() }
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -49,7 +47,7 @@ class KeepAwakeService : Service() {
     }
 
     override fun onDestroy() {
-        releaseWakelock()
+        stop()
         super.onDestroy()
     }
 
@@ -87,26 +85,16 @@ class KeepAwakeService : Service() {
 
     private fun getNotification(allowDim: Boolean): Notification {
         createNotificationChannel()
-        val stopIntent = Intent(this, KeepAwakeService::class.java)
-        stopIntent.putExtra(STOP_ACTION, true)
-        val stopAction = PendingIntent.getService(
-                this,
-                0,
-                stopIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
         val icon = if (allowDim) R.drawable.ic_coffee else R.drawable.ic_coffee_plus
         val title = if (allowDim) R.string.notification_title_dim else R.string.notification_title_bright
         val text = if (allowDim) R.string.notification_big_text_dim else R.string.notification_big_text_bright
-
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(icon)
                 .setContentTitle(getString(title))
                 .setContentText(getString(R.string.notification_text))
                 .setStyle(NotificationCompat.BigTextStyle().bigText(getString(text)))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .addAction(R.drawable.ic_stop, getString(R.string.stop_action), stopAction)
+                .addAction(R.drawable.ic_stop, getString(R.string.stop_action), getStopAction())
                 .build()
     }
 
@@ -120,5 +108,16 @@ class KeepAwakeService : Service() {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
+    }
+
+    private fun getStopAction(): PendingIntent {
+        val stopIntent = Intent(this, KeepAwakeService::class.java)
+        stopIntent.putExtra(STOP_ACTION, true)
+        return PendingIntent.getService(
+                this,
+                0,
+                stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+        )
     }
 }
